@@ -37,13 +37,12 @@ class InpainterChunk:
 
 
 class PlayDiffusion():
-    def __init__(self, device: str = "cuda"):
+    def __init__(self, ckpt_path: str = None, device: str = "cuda"):
         import nltk
         import torch
 
         self.device = torch.device(device)
-
-        self.preset = self.load_preset()
+        self.preset = self.load_preset(ckpt_path=ckpt_path)
         self.mm = PlayDiffusionModelManager(self.preset, self.device)
 
         nltk.download("averaged_perceptron_tagger_eng", quiet=True)
@@ -65,23 +64,25 @@ class PlayDiffusion():
 
     def load_preset(
         self,
-        hf_repo_id: str = "PlayHT/inpainter",
-        vocoder_path: str = "v090_g_01105000",
-        tokenizer_path: str = "tokenizer-multi_bpe16384_merged_extended_58M.json",
-        speech_tokenizer_path: str = "xlsr2_1b_v2_custom.pt",
-        kmeans_layer_path: str = "kmeans_10k.npy",
-        voice_encoder_path: str = "voice_encoder_1992000.pt",
-        inpainter_path: str = "last_250k_fixed.pkl",
+        ckpt_path: str = None,
+        hf_repo_id: str = "PlayHT/inpainter"
     ) -> dict:
-        from huggingface_hub import hf_hub_download
-
-        vocoder_path = hf_hub_download(repo_id=hf_repo_id, filename=vocoder_path)
-        tokenizer_path = hf_hub_download(repo_id=hf_repo_id, filename=tokenizer_path)
-        speech_tokenizer_path = hf_hub_download(repo_id=hf_repo_id, filename=speech_tokenizer_path)
-        kmeans_layer_path = hf_hub_download(repo_id=hf_repo_id, filename=kmeans_layer_path)
-        voice_encoder_path = hf_hub_download(repo_id=hf_repo_id, filename=voice_encoder_path)
-        inpainter_path = hf_hub_download(repo_id=hf_repo_id, filename=inpainter_path)
-
+        if ckpt_path is None:
+            from huggingface_hub import hf_hub_download
+            vocoder_path = hf_hub_download(repo_id=hf_repo_id, filename=vocoder_path)
+            tokenizer_path = hf_hub_download(repo_id=hf_repo_id, filename=tokenizer_path)
+            speech_tokenizer_path = hf_hub_download(repo_id=hf_repo_id, filename=speech_tokenizer_path)
+            kmeans_layer_path = hf_hub_download(repo_id=hf_repo_id, filename=kmeans_layer_path)
+            voice_encoder_path = hf_hub_download(repo_id=hf_repo_id, filename=voice_encoder_path)
+            inpainter_path = hf_hub_download(repo_id=hf_repo_id, filename=inpainter_path)
+        else:
+            vocoder_path = ckpt_path + '/v090_g_01105000'
+            tokenizer_path = ckpt_path + '/tokenizer-multi_bpe16384_merged_extended_58M.json'
+            speech_tokenizer_path = ckpt_path + '/xlsr2_1b_v2_custom.pt'
+            kmeans_layer_path = ckpt_path + '/kmeans_10k.npy'
+            voice_encoder_path = ckpt_path + '/voice_encoder_1992000.pt'
+            inpainter_path = ckpt_path + '/last_250k_fixed.pkl'
+        
         preset = dict(
             vocoder = dict(
                 checkpoint = vocoder_path,

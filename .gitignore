@@ -1,1 +1,5 @@
 .venv/*
+.gradio
+__pycache__
+notebook
+modeldata

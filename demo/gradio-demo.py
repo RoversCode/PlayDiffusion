@@ -1,32 +1,45 @@
 import os
 import re
-
 import gradio as gr
 from openai import OpenAI
-
+import nemo.collections.asr as nemo_asr
 from playdiffusion import PlayDiffusion, InpaintInput, TTSInput
-from playdiffusion.utils.audio_utils import raw_audio_to_torch_audio
-from playdiffusion.utils.save_audio import make_16bit_pcm
-from playdiffusion.utils.voice_resource import VoiceResource
+# from playdiffusion.utils.audio_utils import raw_audio_to_torch_audio
+# from playdiffusion.utils.save_audio import make_16bit_pcm
+# from playdiffusion.utils.voice_resource import VoiceResource
+asr_model_path = "modeldata/audio/asr/parakeet/parakeet-tdt-0.6b-v2.nemo"
+asr_model = nemo_asr.models.ASRModel.restore_from(asr_model_path)
+inpainter = PlayDiffusion(ckpt_path="modeldata/audio/inpaint/play_diffusion")
 
-whisper_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-inpainter = PlayDiffusion()
+# 备份
+# whisper_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", default="""))
+# def run_asr(audio):
+#     audio_file = open(audio, "rb")
+#     transcript = whisper_client.audio.transcriptions.create(
+#         file=audio_file,
+#         model="whisper-1",
+#         response_format="verbose_json",
+#         timestamp_granularities=["word"]
+#     )
+#     word_times = [{
+#         "word": word.word,
+#         "start": word.start,
+#         "end": word.end
+#     } for word in transcript.words]
+
+#     return transcript.text, transcript.text, word_times
 
 def run_asr(audio):
-    audio_file = open(audio, "rb")
-    transcript = whisper_client.audio.transcriptions.create(
-        file=audio_file,
-        model="whisper-1",
-        response_format="verbose_json",
-        timestamp_granularities=["word"]
-    )
+    output = asr_model.transcribe([audio], timestamps=True)
+    
     word_times = [{
-        "word": word.word,
-        "start": word.start,
-        "end": word.end
-    } for word in transcript.words]
-
-    return transcript.text, transcript.text, word_times
+        "word": word['word'].strip(",.?!"),
+        "start": word['start'],
+        "end": word['end']
+    } for word in output[0].timestamp['word']]
+    
+    text = output[0].text
+    return text, text, word_times
 
 def run_inpainter(input_text, output_text, word_times, audio, num_steps, init_temp, init_diversity, guidance, rescale, topk):
     return inpainter.inpaint(InpaintInput(input_text=input_text, output_text=output_text, input_word_times=word_times, audio=audio, num_steps=num_steps, init_temp=init_temp, init_diversity=init_diversity, guidance=guidance, rescale=rescale, topk=topk))

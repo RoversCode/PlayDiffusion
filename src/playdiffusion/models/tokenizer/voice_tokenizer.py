@@ -10,9 +10,9 @@ class VoiceBpeTokenizer:
     def __init__(self, vocab_file = None):
         if vocab_file is None:
             vocab_file = TOKENIZER_PATH
-        vocab_file = os.path.join(
-            os.path.dirname(__file__), vocab_file
-        )
+        # vocab_file = os.path.join(
+        #     os.path.dirname(__file__), vocab_file
+        # )
         self.tokenizer: Tokenizer = Tokenizer.from_file(vocab_file)
 
     def encode(self, txt: str):
